@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Request, Response } from 'express';
 import postRouter from './route/post_routes';
 import config from './config/config';
 import logger from './util/logger';
@@ -11,12 +11,16 @@ const port = config.serverPort;
 app.use(express.json()); // Json Payload
 app.use(express.urlencoded({ extended: true })); // URL Payload
 app.use(loggerMiddleware); // Logging
-
+ 
 app.use('/api', postRouter);
+
+app.get('/', async (_: Request, res: Response) => {
+	res.send('This is express server.');
+});
 
 AppDataSource.initialize()
 	.then(() => {
-		logger.debug('MySQL Database connected');
+		logger.info('MySQL Database connected');
 
 		const server = app.listen(port, () => {
 			logger.info(`Server is running on http://localhost:${port}`);
