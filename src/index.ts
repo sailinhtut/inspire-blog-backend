@@ -11,10 +11,10 @@ const port = config.serverPort;
 app.use(express.json()); // Json Payload
 app.use(express.urlencoded({ extended: true })); // URL Payload
 app.use(loggerMiddleware); // Logging
- 
-app.use('/api', postRouter);
 
-app.get('/', async (_: Request, res: Response) => {
+app.use('/blogorm/api', postRouter);
+
+app.get('/blogorm', async (_: Request, res: Response) => {
 	res.send('This is express server.');
 });
 
