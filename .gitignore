@@ -2,3 +2,6 @@
 /build
 /logs
 /backup
+/storage
+
+/.vscode
