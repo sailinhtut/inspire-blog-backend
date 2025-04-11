@@ -1,7 +1,8 @@
 import 'reflect-metadata';
 import { DataSource } from 'typeorm';
-import { Post } from '../model/post';
 import config from '../config/config';
+import { Post } from '../model/post';
+import { Category } from '../model/category';
 
 export const AppDataSource = new DataSource({
 	type: 'mysql',
@@ -12,5 +13,5 @@ export const AppDataSource = new DataSource({
 	database: config.db_name,
 	synchronize: true,
 	logging: false,
-	entities: [Post],
+	entities: [Post, Category],
 });
