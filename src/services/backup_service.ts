@@ -5,6 +5,7 @@ import { exec } from 'child_process';
 import config from '../config/config';
 import cron from 'node-cron';
 import Logger from './logging_service';
+import { formatBytes, getDirectorySize } from '../utils/byte_formatter';
 
 export async function backupDatabase() {
 	const backupDir = path.join(config.backupDir, 'database');
@@ -31,18 +32,16 @@ export async function backupDatabase() {
 			Logger.saveError(`Backup stderr: ${stderr}`);
 		}
 
-		Logger.saveInfo(`Database backup saved: ${sqlFile}`);
-
 		const output = fs.createWriteStream(zipFile);
 		const archive = archiver('zip', {
 			zlib: { level: 9 },
 		});
 
 		output.on('close', () => {
-			Logger.saveInfo(`Backup zipped: ${zipFile} (${archive.pointer()} bytes)`);
-			// Optionally delete the .sql after zipping
 			fs.unlinkSync(sqlFile);
-			Logger.console(`Original SQL file deleted: ${sqlFile}`);
+
+			const size = formatBytes(archive.pointer());
+			Logger.saveInfo(`Database Back Up Saved: ${sqlFile} (${size})`);
 		});
 
 		archive.on('error', (err) => {
@@ -70,7 +69,8 @@ export async function backupStorage() {
 		});
 
 		output.on('close', () => {
-			Logger.saveInfo(`Zipped ${archive.pointer()} total bytes`);
+			const size = formatBytes(archive.pointer());
+			Logger.saveInfo(`Disk Back Up Saved: ${outputPath} (${size})`);
 		});
 
 		archive.on('error', (err) => {
@@ -79,7 +79,9 @@ export async function backupStorage() {
 
 		archive.on('progress', (progress) => {
 			Logger.console(
-				`Zipping Progress: Entries Processed: ${progress.entries.processed}, Total Bytes: ${progress.fs.processedBytes}`
+				`Zipping ${progress.entries.processed}/${progress.entries.total} (${formatBytes(
+					progress.fs.processedBytes
+				)})`
 			);
 		});
 
@@ -97,26 +99,40 @@ export async function backupStorage() {
 
 export async function clearTemporaryDir() {
 	try {
+		const sizeInBytes = getDirectorySize(config.tempDir);
 		fs.rmSync(config.tempDir, { recursive: true });
 		fs.mkdirSync(config.tempDir, { recursive: true });
-		Logger.console('Cleared Temporary Directory');
+		Logger.console(`Cleared Temporary Directory (${formatBytes(sizeInBytes)})`);
 	} catch (error) {
 		Logger.saveError(`Error while clearing temp folder: ${error.message}`);
 	}
 }
 
+export async function clearLogDir() {
+	try {
+		const sizeInBytes = getDirectorySize(config.logDir);
+		fs.rmSync(config.logDir, { recursive: true });
+		fs.mkdirSync(config.logDir, { recursive: true });
+		Logger.console(`Cleared Log Directory (${formatBytes(sizeInBytes)})`);
+	} catch (error) {
+		Logger.saveError(`Error while clearing log folder: ${error.message}`);
+	}
+}
+
 export default function scheduleTasks() {
-	backupDatabase();
 	cron.schedule('*/10 * * * *', () => {
 		backupDatabase();
 	});
 
-	backupStorage();
 	cron.schedule('*/10 * * * *', async () => {
 		backupStorage();
 	});
 
-	cron.schedule('*/1 * * * *', async () => {
+	cron.schedule('*/10 * * * *', async () => {
 		clearTemporaryDir();
+	});
+
+	cron.schedule('*/10 * * * *', async () => {
+		clearLogDir();
 	});
 }
