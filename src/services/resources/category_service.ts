@@ -1,5 +1,5 @@
-import { Category } from '../../model/category';
-import { categoryRepo } from '../../controller/category_controller';
+import { Category } from '../../models/category';
+import { categoryRepo } from '../../controllers/category_controller';
 
 class CategoryService {
 	static async getCategories(): Promise<Category[]> {

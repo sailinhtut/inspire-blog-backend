@@ -1,8 +1,8 @@
 import 'reflect-metadata';
 import { DataSource } from 'typeorm';
 import config from '../config/config';
-import { Post } from '../model/post';
-import { Category } from '../model/category';
+import { Post } from '../models/post';
+import { Category } from '../models/category';
 
 export const AppDataSource = new DataSource({
 	type: 'mysql',

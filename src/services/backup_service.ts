@@ -1,13 +1,13 @@
-import logger from '../util/logger';
 import path from 'path';
 import fs from 'fs';
 import archiver from 'archiver';
 import { exec } from 'child_process';
 import config from '../config/config';
 import cron from 'node-cron';
+import Logger from './logging_service';
 
 export async function backupDatabase() {
-	const backupDir = path.join(config.rootDir, 'backup/database');
+	const backupDir = path.join(config.backupDir, 'database');
 
 	if (!fs.existsSync(backupDir)) {
 		fs.mkdirSync(backupDir, { recursive: true });
@@ -20,18 +20,18 @@ export async function backupDatabase() {
 		config.db_password ? '-p ${config.db_password}' : ''
 	} ${config.db_name} > "${sqlFile}"`;
 
-	logger.debug('Starting MySQL database backup...');
+	Logger.console('Starting MySQL database backup...');
 
 	exec(dumpCommand, (error, stdout, stderr) => {
 		if (error) {
-			logger.error(`Backup error: ${error.message}`);
+			Logger.saveError(`Backup error: ${error.message}`);
 			return;
 		}
 		if (stderr) {
-			logger.error(`Backup stderr: ${stderr}`);
+			Logger.saveError(`Backup stderr: ${stderr}`);
 		}
 
-		logger.info(`Database backup saved: ${sqlFile}`);
+		Logger.saveInfo(`Database backup saved: ${sqlFile}`);
 
 		const output = fs.createWriteStream(zipFile);
 		const archive = archiver('zip', {
@@ -39,14 +39,14 @@ export async function backupDatabase() {
 		});
 
 		output.on('close', () => {
-			logger.info(`Backup zipped: ${zipFile} (${archive.pointer()} bytes)`);
+			Logger.saveInfo(`Backup zipped: ${zipFile} (${archive.pointer()} bytes)`);
 			// Optionally delete the .sql after zipping
 			fs.unlinkSync(sqlFile);
-			logger.debug(`Original SQL file deleted: ${sqlFile}`);
+			Logger.console(`Original SQL file deleted: ${sqlFile}`);
 		});
 
 		archive.on('error', (err) => {
-			logger.error(`Archive error: ${err.message}`);
+			Logger.saveError(`Archive error: ${err.message}`);
 		});
 
 		archive.pipe(output);
@@ -57,20 +57,20 @@ export async function backupDatabase() {
 
 export async function backupStorage() {
 	try {
-		const backupDir = path.join(config.rootDir, 'backup/storage');
+		const backupDir = path.join(config.backupDir, 'disk');
 
 		if (!fs.existsSync(backupDir)) {
 			fs.mkdirSync(backupDir, { recursive: true });
 		}
 
-		const outputPath = path.join(backupDir, 'storage.zip');
+		const outputPath = path.join(backupDir, 'disk.zip');
 		const output = fs.createWriteStream(outputPath);
 		const archive = archiver('zip', {
 			zlib: { level: 9 },
 		});
 
 		output.on('close', () => {
-			logger.info(`Zipped ${archive.pointer()} total bytes`);
+			Logger.saveInfo(`Zipped ${archive.pointer()} total bytes`);
 		});
 
 		archive.on('error', (err) => {
@@ -78,7 +78,7 @@ export async function backupStorage() {
 		});
 
 		archive.on('progress', (progress) => {
-			logger.debug(
+			Logger.console(
 				`Zipping Progress: Entries Processed: ${progress.entries.processed}, Total Bytes: ${progress.fs.processedBytes}`
 			);
 		});
@@ -86,23 +86,37 @@ export async function backupStorage() {
 		archive.pipe(output);
 
 		// Add the entire storage folder to the archive
-		const storagePath = path.join(config.rootDir, 'storage');
+		const storagePath = path.join(config.publicFilesDir);
 		archive.directory(storagePath, false);
 
 		archive.finalize();
 	} catch (error) {
-		logger.error(`Error while zipping storage folder: ${error.message}`);
+		Logger.saveError(`Error while zipping storage folder: ${error.message}`);
+	}
+}
+
+export async function clearTemporaryDir() {
+	try {
+		fs.rmSync(config.tempDir, { recursive: true });
+		fs.mkdirSync(config.tempDir, { recursive: true });
+		Logger.console('Cleared Temporary Directory');
+	} catch (error) {
+		Logger.saveError(`Error while clearing temp folder: ${error.message}`);
 	}
 }
 
 export default function scheduleTasks() {
-	// backupDatabase(); // initial backup
+	backupDatabase();
 	cron.schedule('*/10 * * * *', () => {
 		backupDatabase();
 	});
 
-	// backupStorage(); // initial backup
+	backupStorage();
 	cron.schedule('*/10 * * * *', async () => {
 		backupStorage();
+	});
+
+	cron.schedule('*/1 * * * *', async () => {
+		clearTemporaryDir();
 	});
 }

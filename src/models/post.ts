@@ -8,7 +8,7 @@ import {
 	JoinColumn,
 } from 'typeorm';
 import { Category } from './category';
-import { storageDownloadURL } from '../util/path_resolver';
+import { storageDownloadURL } from '../utils/path_resolver';
 
 export enum PostStatus {
 	DRAFT = 'draft',

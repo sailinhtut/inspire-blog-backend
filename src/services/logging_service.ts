@@ -1,9 +1,12 @@
+import path from 'path';
 import winston from 'winston';
+import config from '../config/config';
 
+const memoryInfoPath = path.join(config.storageDir, 'logs', 'info.log');
+const memoryErrorPath = path.join(config.storageDir, 'logs', 'error.log');
 
-// Create the logger
 const logger = winston.createLogger({
-	level: 'debug', 
+	level: 'debug',
 	format: winston.format.combine(
 		winston.format.timestamp({ format: 'hh:mm:ss A MMM D YYYY' }),
 		winston.format.printf(({ timestamp, level, message }) => {
@@ -12,7 +15,7 @@ const logger = winston.createLogger({
 	),
 	transports: [
 		new winston.transports.Console({
-			level: 'debug', 
+			level: 'debug',
 			format: winston.format.combine(
 				winston.format.printf(({ timestamp, level, message }) => {
 					return `[${level.toUpperCase()}] [${timestamp}] - ${message}`;
@@ -21,15 +24,29 @@ const logger = winston.createLogger({
 		}),
 		// File transport for 'info' level logs and above
 		new winston.transports.File({
-			filename: 'logs/info.log',
+			filename: memoryInfoPath,
 			level: 'info',
 		}),
 		// File transport for 'error' level logs only
 		new winston.transports.File({
-			filename: 'logs/error.log',
+			filename: memoryErrorPath,
 			level: 'error',
 		}),
 	],
 });
 
-export default logger;
+class Logger {
+	static console(message) {
+		logger.debug(message);
+	}
+
+	static saveInfo(message) {
+		logger.info(message);
+	}
+
+	static saveError(message) {
+		logger.error(message);
+	}
+}
+
+export default Logger;

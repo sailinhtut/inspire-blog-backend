@@ -1,7 +1,8 @@
-import { Post, PostResponse, PostStatus } from '../../model/post';
-import { postRepo } from '../../controller/post_controller';
-import { categoryRepo } from '../../controller/category_controller';
-import logger from '../../util/logger';
+import { Post, PostResponse, PostStatus } from '../../models/post';
+import { postRepo } from '../../controllers/post_controller';
+import { categoryRepo } from '../../controllers/category_controller';
+import Logger from '../logging_service';
+
 
 class PostService {
 	static async getPosts(): Promise<Post[]> {
@@ -64,7 +65,7 @@ class PostService {
 			tags: tags,
 			headerImage: headerImage,
 		});
-		logger.debug(`New Post Created - ${newPost.id}`);
+		Logger.console(`New Post Created - ${newPost.id}`);
 		const savedPost = await postRepo.save(newPost);
 		return savedPost;
 	}

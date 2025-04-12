@@ -2,9 +2,8 @@ import multer, { Multer, StorageEngine } from 'multer';
 import path from 'path';
 import fs from 'fs';
 import config from '../config/config';
-import logger from '../util/logger';
-import { uniqueID } from '../util/id_generator';
-
+import { uniqueID } from '../utils/id_generator';
+import Logger from './logging_service';
 
 // Multer-File Object Schema
 // {
@@ -22,12 +21,21 @@ interface UploadEntry {
 	fieldName: string;
 	savePath: string;
 	filename?: string;
-	maxSize?: number;
 	allowedTypes?: string[];
 }
 
+export class MulterUploadError extends Error {
+	statusCode: number;
+
+	constructor(message: string, statusCode = 400) {
+		super(message);
+		this.name = 'MulterUploadError';
+		this.statusCode = statusCode;
+	}
+}
+
 const DEFAULT_MAX_SIZE = 5 * 1024 * 1024;
-const DEFAULT_ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const DEFAULT_ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 
 const ensureDirectoryExists = (storagePath: string) => {
 	if (!fs.existsSync(storagePath)) {
@@ -35,41 +43,19 @@ const ensureDirectoryExists = (storagePath: string) => {
 	}
 };
 
-export function createDiskConfig(savePath: string, filename: string) {
-	const storage = multer.diskStorage({
-		destination: (req, file, cb) => {
-			const storagePath = path.join(config.rootDir, 'storage', savePath);
-			ensureDirectoryExists(storagePath);
-
-			cb(null, storagePath);
-		},
-		filename: (req, file, cb) => {
-			const ext = path.extname(file.originalname); // safer
-			const name = `${filename}-${file.originalname}.${ext}`;
-			cb(null, name);
-		},
-		
-	});
-	return multer({ storage });
-}
-
-export default function multerUpload(entries: UploadEntry[]): Multer {
+export default function multerUpload({
+	entries,
+	maxSize,
+}: {
+	entries: UploadEntry[];
+	maxSize?: number;
+}): Multer {
 	const storage = multer.diskStorage({
 		destination: (req, file, cb) => {
 			const entry = entries.find((e) => e.fieldName === file.fieldname);
 			if (entry) {
 				const storagePath = path.join(config.rootDir, 'storage', entry.savePath);
 				ensureDirectoryExists(storagePath);
-
-				// @ts-ignore
-				if (!req.savedFilePaths) {
-					// @ts-ignore
-					req.savedFilePaths = [];
-				}
-
-				// @ts-ignore
-				req.savedFilePaths.push(storagePath);
-
 				cb(null, storagePath);
 			} else {
 				const storagePath = path.join(config.rootDir, 'storage', 'uploads');
@@ -99,30 +85,37 @@ export default function multerUpload(entries: UploadEntry[]): Multer {
 			const entry = entries.find((e) => e.fieldName === file.fieldname);
 			if (!entry) return cb(null, true);
 
-			// Default values
-			const maxSize = entry.maxSize || DEFAULT_MAX_SIZE;
+			// const maxSize = entry.maxSize || DEFAULT_MAX_SIZE;
 			const allowedTypes = entry.allowedTypes || DEFAULT_ALLOWED_TYPES;
 
-			// Type check
 			if (!allowedTypes.includes(file.mimetype)) {
 				const msg = `Invalid file type for ${
 					file.fieldname
 				}. Allowed types: ${allowedTypes.join(', ')}`;
-				logger.debug(msg);
-				return cb(new Error(msg));
+				Logger.console(msg);
+				return cb(new MulterUploadError(msg));
 			}
 
-			if (file.size > maxSize) {
-				const msg = `File size exceeds limit for ${file.fieldname}. Max size: ${
-					maxSize / 1024 / 1024
-				}MB`;
-				logger.debug(msg);
-				return cb(new Error(msg));
-			}
+			// if (file.size > maxSize) {
+			// 	const msg = `File size exceeds limit for ${file.fieldname}. Max size: ${
+			// 		maxSize / 1024 / 1024
+			// 	}MB`;
+			// 	logger.debug(msg);
+			// 	return cb(new MulterUploadError(msg));
+			// }
 			cb(null, true);
 		},
 		limits: {
-			fileSize: DEFAULT_MAX_SIZE,
+			fileSize: maxSize ?? DEFAULT_MAX_SIZE,
 		},
+	});
+}
+
+export async function rollbackMulterUploaded(files: Express.Multer.File[]) {
+	files.forEach((file) => {
+		if (fs.existsSync(file.path)) {
+			Logger.console('Deleteing' + ' ' + file.path);
+			fs.unlinkSync(file.path);
+		}
 	});
 }

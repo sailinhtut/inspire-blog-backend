@@ -1,10 +1,10 @@
 import { Request, Response } from 'express';
-import { AppDataSource } from '../service/typeorm_service';
-import { Post, PostStatus } from '../model/post';
-import logger from '../util/logger';
+import { AppDataSource } from '../services/typeorm_service';
+import { Post, PostStatus } from '../models/post';
 import { z } from 'zod';
-import { Category } from '../model/category';
-import CategoryService from '../service/resources/category_service';
+import { Category } from '../models/category';
+import CategoryService from '../services/resources/category_service';
+import Logger from '../services/logging_service';
 
 export const categoryRepo = AppDataSource.getRepository(Category);
 
@@ -21,7 +21,7 @@ export class CategoryController {
 
 			res.json(categories);
 		} catch (error) {
-			logger.error(`CATEGORY-CONTROLLER-GET-CATEGORIES: ${error}`);
+			Logger.saveError(`CATEGORY-CONTROLLER-GET-CATEGORIES: ${error}`);
 			res.status(500).json({ message: (error as Error).message });
 		}
 	}
@@ -36,7 +36,7 @@ export class CategoryController {
 
 			res.json(category);
 		} catch (error) {
-			logger.error(`CATEGORY-CONTROLLER-GET-CATEGORIY: ${error}`);
+			Logger.saveError(`CATEGORY-CONTROLLER-GET-CATEGORIY: ${error}`);
 			res.status(500).json({ message: (error as Error).message });
 		}
 	}
@@ -64,7 +64,7 @@ export class CategoryController {
 
 			res.status(201).json(createdCategory);
 		} catch (error) {
-			logger.error(`CATEGORY-CONTROLLER-ADD-CATEGORY: ${error}`);
+			Logger.saveError(`CATEGORY-CONTROLLER-ADD-CATEGORY: ${error}`);
 			res.status(500).json({ message: (error as Error).message });
 		}
 	}
@@ -85,7 +85,7 @@ export class CategoryController {
 			const result = categoryUpdateSchema.safeParse(req.body);
 			if (!result.success) {
 				const errors = result.error.flatten().fieldErrors;
-				logger.debug(errors);
+				Logger.console(errors);
 				return res.status(400).json({ errors: errors });
 			}
 
@@ -97,7 +97,7 @@ export class CategoryController {
 
 			res.json(updatedCategory);
 		} catch (error) {
-			logger.error(`CATEGORY-CONTROLLER-UPDATE-CATEGORY: ${error}`);
+			Logger.saveError(`CATEGORY-CONTROLLER-UPDATE-CATEGORY: ${error}`);
 			res.status(500).json({ message: (error as Error).message });
 		}
 	}
@@ -117,7 +117,7 @@ export class CategoryController {
 			}
 			res.json({ message: `${category.name} is deleted` });
 		} catch (error) {
-			logger.error(`CATEGORY-CONTROLLER-DELETE-CATEGORY: ${error}`);
+			Logger.saveError(`CATEGORY-CONTROLLER-DELETE-CATEGORY: ${error}`);
 			res.status(500).json({ message: (error as Error).message });
 		}
 	}

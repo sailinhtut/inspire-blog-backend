@@ -1,17 +1,24 @@
 import { Request, Response, Router } from 'express';
-import multerUpload, { createDiskConfig } from '../service/upload_service';
-import logger from '../util/logger';
-import { storageDownloadURL } from '../util/path_resolver';
-import { uniqueID } from '../util/id_generator';
+import multerUpload from '../services/upload_service';
+import { storageDownloadURL } from '../utils/path_resolver';
+import { uniqueID } from '../utils/id_generator';
+import multer from 'multer';
+import { config } from 'dotenv';
+import Logger from '../services/logging_service';
 
 const appRouter = Router();
 
 appRouter.post(
 	'/upload',
-	multerUpload([
-		{ fieldName: 'profile', savePath: 'profile', filename: uniqueID(14) },
-		{ fieldName: 'attachments', savePath: 'attachments', filename: uniqueID(14) },
-	]).any(),
+	multerUpload({
+		entries: [
+			{
+				fieldName: 'profile',
+				savePath: 'profile',
+			},
+			{ fieldName: 'attachments', savePath: 'attachments' },
+		],
+	}).any(),
 	(req: Request, res: Response) => {
 		try {
 			res.status(201).json({
@@ -23,7 +30,7 @@ appRouter.post(
 					: [],
 			});
 		} catch (error) {
-			logger.error(`Upload error: ${error}`);
+			Logger.console(`Upload error: ${error}`);
 			res.status(500).json({ message: 'Internal server error' });
 		}
 	}
