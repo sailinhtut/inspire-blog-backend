@@ -21,8 +21,6 @@ export async function backupDatabase() {
 		config.db_password ? '-p ${config.db_password}' : ''
 	} ${config.db_name} > "${sqlFile}"`;
 
-	Logger.console('Starting MySQL database backup...');
-
 	exec(dumpCommand, (error, stdout, stderr) => {
 		if (error) {
 			Logger.saveError(`Backup error: ${error.message}`);
