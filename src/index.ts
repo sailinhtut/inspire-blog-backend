@@ -8,20 +8,19 @@ import requestLoggerMiddleware from './middlewares/request_logger';
 import responseErrorHandlerMiddleware from './middlewares/error_handler';
 import Logger from './services/logging_service';
 import postRouter from './routes/post_router';
-import categoryRouter from './routes/category_router';
 import appRouter from './routes/app_router';
+import formDataResolver from './middlewares/form_data_resolver';
 
 const app = express();
 const port = config.serverPort;
 
-app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
 app.use(requestLoggerMiddleware);
+app.use(formDataResolver);
 
 app.use('/share', express.static(config.publicFilesDir));
-
 app.use('/api', postRouter);
-app.use('/api', categoryRouter);
 app.use('/', appRouter);
 
 app.use(responseErrorHandlerMiddleware);

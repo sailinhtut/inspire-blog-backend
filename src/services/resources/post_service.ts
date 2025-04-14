@@ -1,12 +1,11 @@
 import { Post, PostResponse, PostStatus } from '../../models/post';
 import { postRepo } from '../../controllers/post_controller';
-import { categoryRepo } from '../../controllers/category_controller';
 import Logger from '../logging_service';
 
 
 class PostService {
 	static async getPosts(): Promise<Post[]> {
-		let posts = await postRepo.find({ relations: ['category'] });
+		let posts = await postRepo.find();
 		return posts;
 	}
 
@@ -14,7 +13,6 @@ class PostService {
 		const [posts, total] = await postRepo.findAndCount({
 			skip: (page - 1) * size,
 			take: size,
-			relations: ['category'],
 		});
 
 		const lastPage = Math.ceil(total / size);
@@ -34,8 +32,7 @@ class PostService {
 
 	static async getPost(postId: number): Promise<Post | null> {
 		let post = await postRepo.findOne({
-			where: { id: postId },
-			relations: ['category'],
+			where: { id: postId }
 		});
 		return post;
 	}
@@ -44,24 +41,19 @@ class PostService {
 		title,
 		content,
 		status,
-		category_id,
 		tags,
 		headerImage,
 	}: {
 		title: string;
 		content: string;
 		status: PostStatus;
-		category_id: number;
 		tags: string[];
 		headerImage?: string;
 	}): Promise<Post | null> {
-		const category = await categoryRepo.findOne({ where: { id: category_id } });
-
 		const newPost = postRepo.create({
 			title,
 			content,
 			status,
-			category: category,
 			tags: tags,
 			headerImage: headerImage,
 		});
@@ -76,14 +68,12 @@ class PostService {
 			title,
 			content,
 			status,
-			category_id,
 			tags,
 			headerImage,
 		}: {
 			title?: string;
 			content?: string;
 			status?: PostStatus;
-			category_id?: number;
 			tags?: string[];
 			headerImage?: string;
 		}
@@ -92,11 +82,6 @@ class PostService {
 
 		if (!post) {
 			return null;
-		}
-
-		if (category_id) {
-			const category = await categoryRepo.findOneBy({ id: category_id });
-			post.category = category;
 		}
 
 		postRepo.merge(post, { title, content, status, tags, headerImage });

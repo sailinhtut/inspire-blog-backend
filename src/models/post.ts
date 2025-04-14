@@ -7,7 +7,6 @@ import {
 	ManyToOne,
 	JoinColumn,
 } from 'typeorm';
-import { Category } from './category';
 import { storageDownloadURL } from '../utils/path_resolver';
 
 export enum PostStatus {
@@ -22,7 +21,6 @@ export interface PostResponse {
 	title: string;
 	content: string;
 	status: PostStatus;
-	category_id: number | null;
 	likes: number;
 	tags: string[];
 	created_at: Date;
@@ -62,15 +60,15 @@ export class Post {
 	@UpdateDateColumn()
 	updatedAt: Date;
 
-	@ManyToOne(() => Category, (category) => category.posts, {
-		onUpdate: 'CASCADE',
-		onDelete: 'SET NULL',
-	})
-	@JoinColumn({
-		name: 'category_id',
-		referencedColumnName: 'id',
-	})
-	category: Category;
+	// @ManyToOne(() => Category, (category) => category.posts, {
+	// 	onUpdate: 'CASCADE',
+	// 	onDelete: 'SET NULL',
+	// })
+	// @JoinColumn({
+	// 	name: 'category_id',
+	// 	referencedColumnName: 'id',
+	// })
+	// category: Category;
 
 	toJsonResponse(): PostResponse {
 		return {
@@ -79,7 +77,7 @@ export class Post {
 			title: this.title,
 			content: this.content,
 			status: this.status,
-			category_id: this.category ? this.category.id : null,
+			// category_id: this.category ? this.category.id : null,
 			likes: this.likes,
 			tags: this.tags,
 			created_at: this.createdAt,

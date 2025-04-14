@@ -2,18 +2,68 @@ import { Request, Response } from 'express';
 import { AppDataSource } from '../services/typeorm_service';
 import { Post, PostStatus } from '../models/post';
 import { z } from 'zod';
-import { categoryRepo } from './category_controller';
 import PostService from '../services/resources/post_service';
-import CategoryService from '../services/resources/category_service';
-import { triggerAsyncId } from 'async_hooks';
 import path from 'path';
-import { deleteFileIfExists } from '../utils/file_operation';
-import { rollbackMulterUploaded } from '../services/upload_service';
 import Logger from '../services/logging_service';
+import { body, header, validationResult } from 'express-validator';
+import { formatValidationErrors } from '../utils/validator_formatter';
+import config from '../config/config';
+import { uniqueID } from '../utils/id_generator';
+import UploadService from '../services/upload_service';
+import { storageDownloadURL } from '../utils/path_resolver';
 
 export const postRepo = AppDataSource.getRepository(Post);
 
 export class PostController {
+	static addValidator = [
+		body('title')
+			.notEmpty()
+			.withMessage('Title is required')
+			.isLength({ max: 255 })
+			.withMessage('Title is too long'),
+		body('content').notEmpty().withMessage('Content is required'),
+		body('status')
+			.isIn(['publish', 'draft', 'archive'])
+			.withMessage('Status must be one of: publish, draft, archive'),
+		body('tags')
+			.notEmpty()
+			.withMessage('Tags is required')
+			.customSanitizer((value) => {
+				if (typeof value === 'string') {
+					return [value];
+				}
+				return value;
+			})
+			.isArray({ min: 1 })
+			.withMessage('Tags must be a non-empty array'),
+		body('tags.*').isString().withMessage('Each tag must be a string'),
+	];
+
+	static updateValidator = [
+		body('title').optional().isLength({ max: 255 }).withMessage('Title is too long'),
+		body('content').optional(),
+		body('status')
+			.optional()
+			.isIn(['publish', 'draft', 'archive'])
+			.withMessage('Status must be one of: publish, draft, archive'),
+		body('tags')
+			.optional()
+			.customSanitizer((value) => {
+				if (typeof value === 'string') {
+					return [value];
+				}
+				return value;
+			})
+			.isArray({ min: 1 })
+			.withMessage('Tags must be a non-empty array'),
+		body('tags.*').isString().withMessage('Each tag must be a string'),
+		body('remove_header_image')
+			.optional()
+			.isBoolean()
+			.withMessage('isActive must be a boolean (true or false)')
+			.toBoolean(),
+	];
+
 	static async getPosts(req, res) {
 		try {
 			const page = parseInt(req.query.page as string) || 1;
@@ -43,46 +93,35 @@ export class PostController {
 
 	static async addPost(req: Request, res) {
 		try {
-			const postCreateSchema = z.object({
-				title: z.string().min(1).max(255),
-				content: z.string().min(1),
-				status: z.nativeEnum(PostStatus).optional(),
-				category_id: z.string().min(1),
-				tags: z.array(z.string()).optional(),
-				header_image: z.any().optional(),
-			});
-			const validated = postCreateSchema.safeParse(req.body);
-			if (!validated.success) {
-				return PostController.errorResponse(req, res, 400, {
-					message: 'Invalid Data',
-					errors: validated.error.flatten().fieldErrors,
+			const errors = validationResult(req);
+			if (!errors.isEmpty()) {
+				return res.status(400).json({
+					message: 'Invalid Data Provided',
+					errors: formatValidationErrors(errors.array()),
 				});
 			}
 
-			const { title, content, status, category_id, tags } = req.body;
-
-			const existedCategory = await CategoryService.getCategory(category_id);
-
-			if (!existedCategory) {
-				return PostController.errorResponse(req, res, 400, {
-					message: 'Invalid category_id: Category not found',
+			let header_image_url = null;
+			if (req.files && req.files['header_image']) {
+				const uploadedFile = req.files['header_image'];
+				const url = await UploadService.moveUploadFile(uploadedFile, {
+					desitnation: 'posts',
+					maxSizeInBytes: 2 * 1024 * 1024,
 				});
+
+				Logger.console(`Uploaded URI: ${url}`);
+
+				header_image_url = url;
 			}
 
-			const headerImage = req.files
-				? (req.files as Express.Multer.File[]).find(
-						(file) => file.fieldname === 'header_image'
-				  )
-				: undefined;
-			const savedPath = headerImage ? path.join('posts', headerImage.filename) : undefined;
+			const { title, content, status, tags } = req.body;
 
 			const createdPost = await PostService.addPost({
 				title: title,
 				content: content,
 				status: status,
-				category_id: category_id,
 				tags: tags,
-				headerImage: savedPath,
+				headerImage: header_image_url,
 			});
 
 			res.status(201).json(createdPost.toJsonResponse());
@@ -104,55 +143,43 @@ export class PostController {
 				});
 			}
 
-			const postUpdateSchema = z.object({
-				title: z.string().min(1).max(255).optional(),
-				content: z.string().min(1).optional(),
-				status: z.nativeEnum(PostStatus).optional(),
-				category_id: z.string().min(1).optional(),
-				tags: z.array(z.string()).optional(),
-				header_image: z.any().optional(),
-			});
-
-			const result = postUpdateSchema.safeParse(req.body);
-			if (!result.success) {
-				return PostController.errorResponse(req, res, 400, {
-					message: 'Invalid Data',
-					errors: result.error.flatten().fieldErrors,
+			const errors = validationResult(req);
+			if (!errors.isEmpty()) {
+				return res.status(400).json({
+					message: 'Invalid Data Provided',
+					errors: formatValidationErrors(errors.array()),
 				});
 			}
 
-			const { title, content, status, category_id, tags } = req.body;
-
-			if (category_id) {
-				const existedCategory = await CategoryService.getCategory(category_id);
-				if (!existedCategory) {
-					return PostController.errorResponse(req, res, 400, {
-						message: 'Invalid category_id: Category not found',
-					});
-				}
-				post.category = existedCategory;
+			if (req.body === undefined) {
+				req.body = {};
 			}
 
-			const headerImage = req.files
-				? (req.files as Express.Multer.File[]).find(
-						(file) => file.fieldname === 'header_image'
-				  )
-				: undefined;
-			const savedHeaderImagePath = headerImage
-				? path.join('posts', headerImage.filename)
-				: undefined;
-			if (post.headerImage) {
-				Logger.console(`Existed Post ${post.id} : ${post.headerImage}`);
-				deleteFileIfExists(post.headerImage);
+			if (req.body.remove_header_image && post.headerImage) {
+				Logger.console('About to remove header image' + ` ${post.headerImage}`);
+				await UploadService.removeUploadedFile(post.headerImage);
 			}
+
+			let header_image_url = null;
+			if (req.files && req.files['header_image']) {
+				const uploadedFile = req.files['header_image'];
+				const url = await UploadService.moveUploadFile(uploadedFile, {
+					desitnation: 'posts',
+					maxSizeInBytes: 2 * 1024 * 1024,
+				});
+				header_image_url = url;
+			}
+
+			Logger.console(JSON.stringify(req.body));
+
+			const { title, content, status, tags } = req.body;
 
 			const updatedPost = await PostService.updatePost(parseInt(req.params.id), {
 				title: title,
 				content: content,
 				status: status,
-				category_id: category_id,
 				tags: tags,
-				headerImage: savedHeaderImagePath,
+				headerImage: header_image_url,
 			});
 
 			res.json(updatedPost.toJsonResponse());
@@ -178,7 +205,7 @@ export class PostController {
 			}
 
 			if (post.headerImage) {
-				deleteFileIfExists(post.headerImage);
+				await UploadService.removeUploadedFile(post.headerImage);
 			}
 
 			res.json({ message: `${post.title} is deleted` });
@@ -189,7 +216,6 @@ export class PostController {
 	}
 
 	static errorResponse(req, res, statusCode, object): any {
-		rollbackMulterUploaded(req.files as Express.Multer.File[]);
 		return res.status(statusCode).json(object);
 	}
 }
