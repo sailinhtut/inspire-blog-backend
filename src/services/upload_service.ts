@@ -47,7 +47,7 @@ class UploadService {
 
 			await uploadedFile.mv(targetPath);
 
-			return path.join('posts', filename);
+			return path.join(rule.desitnation, filename);
 		} catch (error) {
 			throw new Error(`Upload failed: ${(error as Error).message}`);
 		}

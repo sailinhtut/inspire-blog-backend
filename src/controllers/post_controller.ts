@@ -12,8 +12,6 @@ import { uniqueID } from '../utils/id_generator';
 import UploadService from '../services/upload_service';
 import { storageDownloadURL } from '../utils/path_resolver';
 
-export const postRepo = AppDataSource.getRepository(Post);
-
 export class PostController {
 	static addValidator = [
 		body('title')
@@ -23,7 +21,7 @@ export class PostController {
 			.withMessage('Title is too long'),
 		body('content').notEmpty().withMessage('Content is required'),
 		body('status')
-			.isIn(['publish', 'draft', 'archive'])
+			.isIn(Object.values(PostStatus))
 			.withMessage('Status must be one of: publish, draft, archive'),
 		body('tags')
 			.notEmpty()
@@ -44,7 +42,7 @@ export class PostController {
 		body('content').optional(),
 		body('status')
 			.optional()
-			.isIn(['publish', 'draft', 'archive'])
+			.isIn(Object.values(PostStatus))
 			.withMessage('Status must be one of: publish, draft, archive'),
 		body('tags')
 			.optional()
@@ -108,9 +106,6 @@ export class PostController {
 					desitnation: 'posts',
 					maxSizeInBytes: 2 * 1024 * 1024,
 				});
-
-				Logger.console(`Uploaded URI: ${url}`);
-
 				header_image_url = url;
 			}
 
@@ -150,13 +145,11 @@ export class PostController {
 					errors: formatValidationErrors(errors.array()),
 				});
 			}
-
 			if (req.body === undefined) {
 				req.body = {};
 			}
 
 			if (req.body.remove_header_image && post.headerImage) {
-				Logger.console('About to remove header image' + ` ${post.headerImage}`);
 				await UploadService.removeUploadedFile(post.headerImage);
 			}
 
@@ -169,8 +162,6 @@ export class PostController {
 				});
 				header_image_url = url;
 			}
-
-			Logger.console(JSON.stringify(req.body));
 
 			const { title, content, status, tags } = req.body;
 

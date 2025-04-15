@@ -22,4 +22,7 @@ export default {
 	backupDir: path.join(process.cwd(), 'storage', 'backup'),
 	tempDir: path.join(process.cwd(), 'storage', 'temp'),
 	logDir: path.join(process.cwd(), 'storage', 'logs'),
+
+	/** Security */
+	jwt_secret: '4fd7f4a8cb8bb9afd565e0d8a973f23c4f1c841862385b6c73d0defc5fadf65e',
 };

@@ -1,7 +1,8 @@
 import { Post, PostResponse, PostStatus } from '../../models/post';
-import { postRepo } from '../../controllers/post_controller';
 import Logger from '../logging_service';
+import { AppDataSource } from '../typeorm_service';
 
+export const postRepo = AppDataSource.getRepository(Post);
 
 class PostService {
 	static async getPosts(): Promise<Post[]> {
@@ -32,7 +33,7 @@ class PostService {
 
 	static async getPost(postId: number): Promise<Post | null> {
 		let post = await postRepo.findOne({
-			where: { id: postId }
+			where: { id: postId },
 		});
 		return post;
 	}

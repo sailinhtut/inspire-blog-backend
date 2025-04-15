@@ -10,6 +10,8 @@ import Logger from './services/logging_service';
 import postRouter from './routes/post_router';
 import appRouter from './routes/app_router';
 import formDataResolver from './middlewares/form_data_resolver';
+import authRouter from './routes/auth_router';
+import './types';
 
 const app = express();
 const port = config.serverPort;
@@ -21,6 +23,7 @@ app.use(formDataResolver);
 
 app.use('/share', express.static(config.publicFilesDir));
 app.use('/api', postRouter);
+app.use('/api', authRouter);
 app.use('/', appRouter);
 
 app.use(responseErrorHandlerMiddleware);
