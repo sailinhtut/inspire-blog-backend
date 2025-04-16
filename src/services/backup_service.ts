@@ -7,6 +7,8 @@ import cron from 'node-cron';
 import Logger from './logging_service';
 import { formatBytes, getDirectorySize } from '../utils/byte_formatter';
 import moment from 'moment';
+import { zipFile } from '../utils/zipper';
+import { uploadBackUpToGoogleDrive } from '../utils/google_drive_uploader';
 
 export async function backupDatabase() {
 	const rootBackupDir = path.join(config.backupDir, 'database');
@@ -53,18 +55,6 @@ export async function backupDatabase() {
 			Logger.saveInfo(`Data Backup Saved: ${dataZipPath}`);
 		});
 	});
-}
-
-function zipFile(inputPath: string, outputPath: string, onClose: () => void) {
-	const output = fs.createWriteStream(outputPath);
-	const archive = archiver('zip', { zlib: { level: 9 } });
-
-	output.on('close', onClose);
-	archive.on('error', (err) => Logger.saveError(`Archive Error: ${err.message}`));
-
-	archive.pipe(output);
-	archive.file(inputPath, { name: path.basename(inputPath) });
-	archive.finalize();
 }
 
 export async function backupStorage() {
@@ -139,6 +129,10 @@ export default function scheduleTasks() {
 
 	cron.schedule('*/10 * * * *', async () => {
 		backupStorage();
+	});
+
+	cron.schedule('*/10 * * * *', async () => {
+		uploadBackUpToGoogleDrive();
 	});
 
 	cron.schedule('*/10 * * * *', async () => {

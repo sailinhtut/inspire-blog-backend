@@ -66,5 +66,4 @@ function execPromise(cmd: string): Promise<void> {
 const schemaZipPath = path.join(config.backupDir, 'database', 'schema', 'schema.zip');
 const dataZipPath = path.join(config.backupDir, 'database', 'data', '2025_04_16_07_56_PM.zip');
 
-// Run this command directly using `npm run restore-backup-data`
 restoreDatabase(schemaZipPath, dataZipPath);

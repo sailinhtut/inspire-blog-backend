@@ -19,6 +19,7 @@ export default {
 	rootDir: process.cwd(),
 	storageDir: path.join(process.cwd(), 'storage'),
 	publicFilesDir: path.join(process.cwd(), 'storage', 'public'),
+	privateFilesDir: path.join(process.cwd(), 'storage', 'private'),
 	backupDir: path.join(process.cwd(), 'storage', 'backup'),
 	tempDir: path.join(process.cwd(), 'storage', 'temp'),
 	logDir: path.join(process.cwd(), 'storage', 'logs'),
