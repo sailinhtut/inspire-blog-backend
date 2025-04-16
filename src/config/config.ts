@@ -25,12 +25,9 @@ export default {
 
 	/** Security */
 	jwt_secret: '4fd7f4a8cb8bb9afd565e0d8a973f23c4f1c841862385b6c73d0defc5fadf65e',
-<<<<<<< HEAD
 
 	/** Mailing */
 	smpt_server: process.env.SMTP_SERVER,
 	smpt_user: process.env.SMTP_USER,
 	smpt_password: process.env.SMTP_PASSWORD,
-=======
->>>>>>> afb70d7f79135cf7274fbb309041bd6c86f72d63
 };

@@ -1,3 +1,4 @@
+import { Like } from 'typeorm';
 import { Post, PostResponse, PostStatus } from '../../models/post';
 import Logger from '../logging_service';
 import { AppDataSource } from '../typeorm_service';
@@ -93,6 +94,41 @@ class PostService {
 	static async deletePost(postId: number): Promise<boolean> {
 		const result = await postRepo.delete(postId);
 		return result.affected !== 0;
+	}
+
+	static async searchPost(query: string): Promise<Post[]> {
+		return await postRepo.find({
+			where: [{ title: Like(`%${query}%`) }, { content: Like(`%${query}%`) }],
+		});
+	}
+
+	static async searchPostsByTags(tags: string[]): Promise<Post[]> {
+		if (tags.length === 0) return [];
+
+		const queryBuilder = postRepo.createQueryBuilder('post');
+		const conditions = tags.map((_, i) => `JSON_CONTAINS(post.tags, :tag${i})`).join(' OR ');
+		const params = tags.reduce((acc, tag, i) => {
+			acc[`tag${i}`] = JSON.stringify(tag); // each tag needs to be quoted JSON string
+			return acc;
+		}, {} as Record<string, any>);
+
+		return await queryBuilder.where(conditions, params).getMany();
+	}
+
+	static async likePost(postId: number): Promise<Post | null> {
+		const post = await postRepo.findOneBy({ id: postId });
+		if (!post) return null;
+
+		post.likes += 1;
+		return await postRepo.save(post);
+	}
+
+	static async unlikePost(postId: number): Promise<Post | null> {
+		const post = await postRepo.findOneBy({ id: postId });
+		if (!post) return null;
+
+		post.likes = Math.max(0, post.likes - 1);
+		return await postRepo.save(post);
 	}
 }
 

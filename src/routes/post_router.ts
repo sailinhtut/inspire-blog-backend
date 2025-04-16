@@ -11,6 +11,8 @@ postRouter.get('/posts/:id', PostController.getPost);
 postRouter.post('/posts', PostController.addValidator, PostController.addPost);
 postRouter.put('/posts/:id', PostController.updateValidator, PostController.updatePost);
 postRouter.delete('/posts/:id', PostController.deletePost);
+postRouter.post('/posts/:id/like',PostController.likePost);
+postRouter.post('/posts/:id/unlike',PostController.unlikePost);
 
 // Comments
 postRouter.get('/posts/:postId/comments', authHandler, CommentController.getComments);

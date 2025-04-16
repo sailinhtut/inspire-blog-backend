@@ -64,6 +64,23 @@ export class PostController {
 
 	static async getPosts(req, res) {
 		try {
+			if (req.query === undefined) {
+				req.query = {};
+			}
+
+			if (req.query.search) {
+				const foundPosts = await PostService.searchPost(req.query.search);
+				const data = foundPosts.map((post) => post.toJsonResponse());
+				return res.json(data);
+			}
+
+			if (req.query.tags) {
+				const tags = Array.isArray(req.query.tags) ? req.query.tags : [req.query.tags];
+				const foundPosts = await PostService.searchPostsByTags(tags);
+				const data = foundPosts.map((post) => post.toJsonResponse());
+				return res.json(data);
+			}
+
 			const page = parseInt(req.query.page as string) || 1;
 			const size = parseInt(req.query.size as string) || 10;
 
@@ -208,5 +225,31 @@ export class PostController {
 
 	static errorResponse(req, res, statusCode, object): any {
 		return res.status(statusCode).json(object);
+	}
+
+	static async likePost(req, res) {
+		try {
+			const result = await PostService.likePost(req.params.id);
+			if (!result) {
+				return res.status(500).json({ message: 'Cannot like post' });
+			}
+			return res.json({ message: 'Post Updated Successfully' });
+		} catch (error) {
+			Logger.saveError(`POST-CONTROLLER-LIKE-POST: ${error}`);
+			res.status(500).json({ message: (error as Error).message });
+		}
+	}
+
+	static async unlikePost(req, res) {
+		try {
+			const result = await PostService.unlikePost(req.params.id);
+			if (!result) {
+				return res.status(500).json({ message: 'Cannot unlike post' });
+			}
+			return res.json({ message: 'Post Updated Successfully' });
+		} catch (error) {
+			Logger.saveError(`POST-CONTROLLER-UNLIKE-POST: ${error}`);
+			res.status(500).json({ message: (error as Error).message });
+		}
 	}
 }
