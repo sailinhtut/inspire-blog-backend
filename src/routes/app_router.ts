@@ -9,6 +9,7 @@ import config from '../config/config';
 import { z } from 'zod';
 import fs from 'fs';
 import { body, validationResult } from 'express-validator';
+
 import { sendSMTPEmail } from '../utils/google_email_sender';
 
 const appRouter = Router();
@@ -21,5 +22,7 @@ appRouter.post('/send-email', async (req, res) => {
 		res.status(500).json({ message: (error as Error).message });
 	}
 });
+
+
 
 export default appRouter;

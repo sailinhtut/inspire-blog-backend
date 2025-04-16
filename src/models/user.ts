@@ -10,6 +10,7 @@ import { Post } from './post';
 import { storageDownloadURL } from '../utils/path_resolver';
 import { Comment } from './comment';
 
+
 export enum Gender {
 	MALE = 'male',
 	FEMALE = 'female',
@@ -66,6 +67,7 @@ export class User {
 
 	@OneToMany(() => Comment, (comment) => comment.user)
 	comments: Comment[];
+
 
 	toJsonResponse(): UserResponse {
 		return {

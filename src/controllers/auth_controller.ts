@@ -2,13 +2,16 @@ import { body, validationResult } from 'express-validator';
 import Logger from '../services/logging_service';
 import { formatValidationErrors } from '../utils/validator_formatter';
 import { Gender } from '../models/user';
+
 import UserService, { userRepo } from '../services/resources/user_service';
 import UploadService from '../services/upload_service';
 import { Request } from 'express';
 import * as bcrypt from 'bcrypt';
 import JWT from '../utils/json_web_token';
+
 import { sendSMTPEmail } from '../utils/google_email_sender';
 import config from '../config/config';
+
 
 class AuthController {
 	static registerValidator = [
@@ -80,9 +83,11 @@ class AuthController {
 
 	static async getUser(req: Request, res) {
 		try {
+
 			return res.json({ message: 'Get User', data: req.user.toJsonResponse() });
 		} catch (error) {
 			Logger.saveError(`AUTH-CONTROLLER-GET-USER: ${error}`);
+
 			res.status(500).json({ message: (error as Error).message });
 		}
 	}

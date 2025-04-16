@@ -6,6 +6,7 @@ import { User } from '../models/user';
 import { UserFavorite } from '../models/user_favourite';
 import { Comment } from '../models/comment';
 
+
 export const AppDataSource = new DataSource({
 	type: 'mysql',
 	host: config.db_host,

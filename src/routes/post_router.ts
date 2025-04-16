@@ -3,6 +3,7 @@ import { PostController } from '../controllers/post_controller';
 import authHandler from '../middlewares/auth_handler';
 import { CommentController } from '../controllers/comment_controller';
 
+
 const postRouter = Router();
 
 postRouter.get('/posts', authHandler, PostController.getPosts);
