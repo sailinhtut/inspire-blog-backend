@@ -6,50 +6,65 @@ import config from '../config/config';
 import cron from 'node-cron';
 import Logger from './logging_service';
 import { formatBytes, getDirectorySize } from '../utils/byte_formatter';
+import moment from 'moment';
 
 export async function backupDatabase() {
-	const backupDir = path.join(config.backupDir, 'database');
+	const rootBackupDir = path.join(config.backupDir, 'database');
+	const schemaDir = path.join(rootBackupDir, 'schema');
+	const dataDir = path.join(rootBackupDir, 'data');
 
-	if (!fs.existsSync(backupDir)) {
-		fs.mkdirSync(backupDir, { recursive: true });
-	}
+	fs.mkdirSync(schemaDir, { recursive: true });
+	fs.mkdirSync(dataDir, { recursive: true });
 
-	const sqlFile = path.join(backupDir, `backup.sql`);
-	const zipFile = path.join(backupDir, `backup.zip`);
+	const timestamp = moment().format('YYYY_MM_DD_hh_mm_A');
+	const schemaSqlPath = path.join(schemaDir, 'schema.sql');
+	const schemaZipPath = path.join(schemaDir, 'schema.zip');
 
-	const dumpCommand = `mysqldump -u ${config.db_user} ${
-		config.db_password ? '-p ${config.db_password}' : ''
-	} ${config.db_name} > "${sqlFile}"`;
+	const dataSqlPath = path.join(dataDir, 'data.sql');
+	const dataZipPath = path.join(dataDir, `${timestamp}.zip`);
 
-	exec(dumpCommand, (error, stdout, stderr) => {
-		if (error) {
-			Logger.saveError(`Backup error: ${error.message}`);
-			return;
-		}
-		if (stderr) {
-			Logger.saveError(`Backup stderr: ${stderr}`);
-		}
+	const dbUser = config.db_user;
+	const dbPassword = config.db_password;
+	const dbName = config.db_name;
+	const passPart = dbPassword ? `-p${dbPassword}` : '';
 
-		const output = fs.createWriteStream(zipFile);
-		const archive = archiver('zip', {
-			zlib: { level: 9 },
+	// Dump schema only
+	const dumpSchemaCommand = `mysqldump -u ${dbUser} ${passPart} --no-data ${dbName} > "${schemaSqlPath}"`;
+
+	// Dump data only
+	const dumpDataCommand = `mysqldump -u ${dbUser} ${passPart} --no-create-info ${dbName} > "${dataSqlPath}"`;
+
+	// Run schema dump
+	exec(dumpSchemaCommand, (schemaErr) => {
+		if (schemaErr) return Logger.saveError(`Schema Backup Error: ${schemaErr.message}`);
+
+		zipFile(schemaSqlPath, schemaZipPath, () => {
+			fs.unlinkSync(schemaSqlPath);
+			Logger.saveInfo(`Schema Backup Saved: ${schemaZipPath}`);
 		});
-
-		output.on('close', () => {
-			fs.unlinkSync(sqlFile);
-
-			const size = formatBytes(archive.pointer());
-			Logger.saveInfo(`Database Back Up Saved: ${sqlFile} (${size})`);
-		});
-
-		archive.on('error', (err) => {
-			Logger.saveError(`Archive error: ${err.message}`);
-		});
-
-		archive.pipe(output);
-		archive.file(sqlFile, { name: `backup.sql` });
-		archive.finalize();
 	});
+
+	// Run data dump
+	exec(dumpDataCommand, (dataErr) => {
+		if (dataErr) return Logger.saveError(`Data Backup Error: ${dataErr.message}`);
+
+		zipFile(dataSqlPath, dataZipPath, () => {
+			fs.unlinkSync(dataSqlPath);
+			Logger.saveInfo(`Data Backup Saved: ${dataZipPath}`);
+		});
+	});
+}
+
+function zipFile(inputPath: string, outputPath: string, onClose: () => void) {
+	const output = fs.createWriteStream(outputPath);
+	const archive = archiver('zip', { zlib: { level: 9 } });
+
+	output.on('close', onClose);
+	archive.on('error', (err) => Logger.saveError(`Archive Error: ${err.message}`));
+
+	archive.pipe(output);
+	archive.file(inputPath, { name: path.basename(inputPath) });
+	archive.finalize();
 }
 
 export async function backupStorage() {
