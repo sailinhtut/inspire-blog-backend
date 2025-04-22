@@ -9,7 +9,7 @@ COPY ["package.json", "package-lock.json*", "npm-shrinkwrap.json*", "./"]
 RUN npm install --production --silent
 
 # Copy the build and environment files
-COPY build ./build
+COPY dist ./dist
 COPY .env ./.env
 
 # Create the storage directories
