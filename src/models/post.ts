@@ -12,7 +12,6 @@ import { storageDownloadURL } from '../utils/path_resolver';
 import { User } from './user';
 import { Comment } from './comment';
 
-
 export enum PostStatus {
 	DRAFT = 'draft',
 	PUBLISH = 'publish',
@@ -48,7 +47,7 @@ export class Post {
 	@Column({ type: 'int', default: 0 })
 	likes: number;
 
-	@Column({ type: 'simple-json', default: '[]' })
+	@Column({ type: 'simple-json', nullable: true })
 	tags: string[];
 
 	@Column({

@@ -28,14 +28,17 @@ app.use('/', appRouter);
 
 app.use(responseErrorHandlerMiddleware);
 
-scheduleTasks();
+// scheduleTasks();
+Logger.console(JSON.stringify(config));
 
 AppDataSource.initialize()
 	.then(() => {
 		Logger.saveInfo('MySQL Database connected');
 
-		const server = app.listen(port, () => {
-			Logger.saveInfo(`Server is running on http://localhost:${port}`);
+		const server = app.listen(5000, '0.0.0.0', () => {
+			Logger.console(`Server is running on http://0.0.0.0:${port}`);
+			Logger.console(config);
+			Logger.saveInfo(`Server is running on http://0.0.0.0:${port}`);
 		});
 
 		server.on('error', (err) => {

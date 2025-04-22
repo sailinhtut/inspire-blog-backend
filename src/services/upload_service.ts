@@ -4,6 +4,7 @@ import config from '../config/config';
 import { uniqueID } from '../utils/id_generator';
 import { formatBytes } from '../utils/byte_formatter';
 import { deleteFileIfExists } from '../utils/file_operation';
+import Logger from './logging_service';
 
 export interface FileValidationRule {
 	desitnation?: string; // e.g., posts

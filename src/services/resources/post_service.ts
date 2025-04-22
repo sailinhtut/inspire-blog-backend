@@ -86,7 +86,7 @@ class PostService {
 			return null;
 		}
 
-		postRepo.merge(post, { title, content, status, tags, headerImage });
+		postRepo.merge(post, { title: title, content: content, status: status  , tags : tags, headerImage : headerImage  });
 		const updatedPost = await postRepo.save(post);
 		return updatedPost;
 	}

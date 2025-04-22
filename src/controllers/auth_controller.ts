@@ -11,7 +11,7 @@ import JWT from '../utils/json_web_token';
 
 import { sendSMTPEmail } from '../utils/google_email_sender';
 import config from '../config/config';
-
+import { remove } from 'winston';
 
 class AuthController {
 	static registerValidator = [
@@ -83,7 +83,6 @@ class AuthController {
 
 	static async getUser(req: Request, res) {
 		try {
-
 			return res.json({ message: 'Get User', data: req.user.toJsonResponse() });
 		} catch (error) {
 			Logger.saveError(`AUTH-CONTROLLER-GET-USER: ${error}`);
@@ -200,11 +199,14 @@ class AuthController {
 				req.body = {};
 			}
 
+			let profile_url = user.profile;
+
 			if (req.body.remove_profile && user.profile) {
 				await UploadService.removeUploadedFile(user.profile);
+				profile_url = null;
 			}
 
-			let profile_url = null;
+			
 			if (req.files && req.files['profile']) {
 				const uploadedFile = req.files['profile'];
 				const url = await UploadService.moveUploadFile(uploadedFile, {
@@ -212,7 +214,14 @@ class AuthController {
 					maxSizeInBytes: 2 * 1024 * 1024,
 				});
 				profile_url = url;
+
+				// remove previous profile image
+				if (user.profile) {
+					await UploadService.removeUploadedFile(user.profile);
+				}
 			}
+
+			
 
 			const { name, gender, birth } = req.body;
 

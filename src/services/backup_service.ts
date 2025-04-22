@@ -132,7 +132,7 @@ export default function scheduleTasks() {
 	});
 
 	cron.schedule('*/10 * * * *', async () => {
-		uploadBackUpToGoogleDrive();
+		// uploadBackUpToGoogleDrive();
 	});
 
 	cron.schedule('*/10 * * * *', async () => {

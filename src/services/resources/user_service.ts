@@ -92,7 +92,12 @@ class UserService {
 			return null;
 		}
 
-		userRepo.merge(user, { name, gender, birth, profile });
+		userRepo.merge(user, {
+			name: name,
+			gender: gender,
+			birth: birth,
+			profile: profile,
+		});
 		const updatedPost = await userRepo.save(user);
 		return updatedPost;
 	}

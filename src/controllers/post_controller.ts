@@ -166,11 +166,13 @@ export class PostController {
 				req.body = {};
 			}
 
+			let header_image_url = post.headerImage;
+
 			if (req.body.remove_header_image && post.headerImage) {
 				await UploadService.removeUploadedFile(post.headerImage);
+				header_image_url = null;
 			}
 
-			let header_image_url = null;
 			if (req.files && req.files['header_image']) {
 				const uploadedFile = req.files['header_image'];
 				const url = await UploadService.moveUploadFile(uploadedFile, {
@@ -178,6 +180,11 @@ export class PostController {
 					maxSizeInBytes: 2 * 1024 * 1024,
 				});
 				header_image_url = url;
+
+				// clear previous header image
+				if (post.headerImage) {
+					await UploadService.removeUploadedFile(post.headerImage);
+				}
 			}
 
 			const { title, content, status, tags } = req.body;
