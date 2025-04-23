@@ -31,7 +31,7 @@ logging_service_1.default.console(JSON.stringify(config_1.default));
 typeorm_service_1.AppDataSource.initialize()
     .then(() => {
     logging_service_1.default.saveInfo('MySQL Database connected');
-    const server = app.listen(5000, '0.0.0.0', () => {
+    const server = app.listen(parseInt(port), '0.0.0.0', () => {
         logging_service_1.default.console(`Server is running on http://0.0.0.0:${port}`);
         logging_service_1.default.console(config_1.default);
         logging_service_1.default.saveInfo(`Server is running on http://0.0.0.0:${port}`);

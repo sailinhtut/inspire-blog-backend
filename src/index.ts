@@ -35,7 +35,7 @@ AppDataSource.initialize()
 	.then(() => {
 		Logger.saveInfo('MySQL Database connected');
 
-		const server = app.listen(5000, '0.0.0.0', () => {
+		const server = app.listen(parseInt(port), '0.0.0.0', () => {
 			Logger.console(`Server is running on http://0.0.0.0:${port}`);
 			Logger.console(config);
 			Logger.saveInfo(`Server is running on http://0.0.0.0:${port}`);
