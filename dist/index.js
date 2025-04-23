@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const typeorm_service_1 = require("./services/typeorm_service");
 const config_1 = __importDefault(require("./config/config"));
+const backup_service_1 = __importDefault(require("./services/backup_service"));
 const request_logger_1 = __importDefault(require("./middlewares/request_logger"));
 const error_handler_1 = __importDefault(require("./middlewares/error_handler"));
 const logging_service_1 = __importDefault(require("./services/logging_service"));
@@ -25,7 +26,7 @@ app.use('/api', post_router_1.default);
 app.use('/api', auth_router_1.default);
 app.use('/', app_router_1.default);
 app.use(error_handler_1.default);
-// scheduleTasks();
+(0, backup_service_1.default)();
 logging_service_1.default.console(JSON.stringify(config_1.default));
 typeorm_service_1.AppDataSource.initialize()
     .then(() => {

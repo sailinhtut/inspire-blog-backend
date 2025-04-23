@@ -9,7 +9,7 @@ dotenv_1.default.config();
 exports.default = {
     /** Server Configs */
     host: process.env.HOST,
-    serverPort: process.env.SERVER_PORT,
+    serverPort: process.env.BACKEND_PORT,
     /** Database Connection */
     db_host: process.env.DB_HOST,
     db_port: parseInt(process.env.DB_PORT),
