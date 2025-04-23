@@ -15,5 +15,5 @@ COPY .env ./.env
 # Create the storage directories
 RUN mkdir -p storage/temp storage/backup storage/logs storage/private storage/public
 
-EXPOSE 5000
+EXPOSE 3010
 CMD ["npm", "start"]

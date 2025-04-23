@@ -28,7 +28,7 @@ services:
       - SMTP_SERVER=${SMTP_SERVER}
       - SMTP_USER=${SMTP_USER}
       - SMTP_PASSWORD=${SMTP_PASSWORD}
-    expose:
+    ports:
       - "${BACKEND_PORT}:${BACKEND_PORT}"
     depends_on:
       - mysql
