@@ -11,7 +11,7 @@ services:
       MYSQL_USER: ${DB_USERNAME}
       MYSQL_PASSWORD: ${DB_PASSWORD}
     ports:
-      - "${DB_PORT}:${DB_PORT}"
+      - "${DB_PORT}:3306"
     volumes:
       - database_storage:/var/lib/mysql
 
@@ -29,7 +29,7 @@ services:
       - SMTP_USER=${SMTP_USER}
       - SMTP_PASSWORD=${SMTP_PASSWORD}
     expose:
-      - "${SERVER_PORT}:${SERVER_PORT}"
+      - "${BACKEND_PORT}:${BACKEND_PORT}"
     depends_on:
       - mysql
     volumes:
