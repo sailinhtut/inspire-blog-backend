@@ -6,7 +6,7 @@ dotenv.config();
 export default {
 	/** Server Configs */
 	host: process.env.HOST,
-	serverPort: process.env.SERVER_PORT,
+	serverPort: process.env.BACKEND_PORT,
 
 	/** Database Connection */
 	db_host: process.env.DB_HOST,
