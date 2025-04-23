@@ -28,7 +28,7 @@ app.use('/', appRouter);
 
 app.use(responseErrorHandlerMiddleware);
 
-// scheduleTasks();
+scheduleTasks();
 Logger.console(JSON.stringify(config));
 
 AppDataSource.initialize()
